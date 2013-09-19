@@ -1,0 +1,3 @@
+#!/bin/sh
+dir=`dirname $0`
+qmlscene -I ${dir}/imports $1
