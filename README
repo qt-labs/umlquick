@@ -1,0 +1,19 @@
+The initial goal of the UmlQuick project is to automatically generate
+message trace diagrams from a declarative QML form by instrumenting the
+code being traced.  Perhaps other types of diagrams could be created in
+QML too.  It was inspired by the UMLGraph project
+http://www.umlgraph.org/doc/seq-intro.html but rewritten because I
+wanted to try to use QML instead of gnu pic macros.
+
+The code here is only for viewing the generated QML, and there are a couple
+of examples.  Generating QML inside core parts of Qt depends on
+https://codereview.qt-project.org/#change,43201 
+and there is an example patch for qtbase to trace touch events here
+https://codereview.qt-project.org/#change,65307
+
+It should work with Qt 5.2 or newer (due to some limited usage of
+QtQuick.Controls).
+
+uq is a script which simply runs qml with your given (possibly 
+generated) qml file containing the declarative UML diagram.  It can
+optionally be added to your path.
