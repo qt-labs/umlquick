@@ -1,0 +1,6 @@
+UmlSequenceDiagram 1.0 UmlSequenceDiagram.qml
+ObjectInstance 1.0 ObjectInstance.qml
+Message 1.0 Message.qml
+MessageRepeated 1.0 MessageRepeated.qml
+Return 1.0 Return.qml
+
