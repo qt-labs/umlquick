@@ -52,8 +52,14 @@ MouseArea {
     hoverEnabled: true
     z: 1
     property bool toSelf: from && from === to
-    property bool backwards: from ? from.x > to.x : false
+    property bool backwards: from && to ? from.x > to.x : false
     property real timestamp: 0
+    Text {
+        x: -root.x
+        text: root.timestamp
+        color: "darkblue"
+        font.pointSize: 8
+    }
     Rectangle {
         width: 150
         height: 20
@@ -89,10 +95,10 @@ MouseArea {
         x: backwards || toSelf ? 0 : parent.width - width
     }
     ToolTip {
-        text: root.methodSignature + "\n" + root.backtrace + "\n\nparams:\n" + root.params
+        text: root.methodSignature + "\n" + root.backtrace + "\n\nparams:\n" + root.params + "\n\ntimestamp: " + root.timestamp
         visible: root.containsMouse
     }
 
-    anchors.left: backwards ? to.horizontalCenter : from ? from.horizontalCenter : undefined
-    anchors.right: backwards ? from.horizontalCenter : toSelf ? undefined : to.horizontalCenter
+    anchors.left: backwards && to ? to.horizontalCenter : from ? from.horizontalCenter : undefined
+    anchors.right: backwards && from ? from.horizontalCenter : toSelf ? undefined : to ? to.horizontalCenter : undefined
 }

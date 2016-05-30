@@ -96,7 +96,7 @@ Rectangle {
                 Text {
                     id: rotatedLabel
                     color: "darkblue"
-                    text: objectClassLabel.text
+                    text: objectClassLabel.text + "    " + objectNameLabel.text
                     anchors.centerIn: parent
                 }
             }
