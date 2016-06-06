@@ -43,6 +43,7 @@ Rectangle {
     width: implicitWidth
     height: 45
     border.color: "black"
+    antialiasing: true
     property alias objectName: objectNameLabel.text
     property alias objectClass: objectClassLabel.text
     property string q
@@ -82,23 +83,23 @@ Rectangle {
         height: parent.parent.height - parent.y - parent.height
         source: "../common/images/vdash5.png"
         fillMode: Image.TileVertically
-    Repeater {
-        model: parent.height / 1000
-        Rectangle {
-            y: 500 + index * 1000
-            z: 0
-            anchors.horizontalCenter: dashline.horizontalCenter
-            rotation: -90
-            width: rotatedLabel.width
-            height: rotatedLabel.height
-            opacity: 0.6
-            Text {
-                id: rotatedLabel
-                color: "darkblue"
-                text: objectClassLabel.text
-                anchors.centerIn: parent
+        Repeater {
+            model: parent.height / 1000
+            Rectangle {
+                y: 500 + index * 1000
+                z: 0
+                anchors.horizontalCenter: dashline.horizontalCenter
+                rotation: -90
+                width: rotatedLabel.width
+                height: rotatedLabel.height
+                opacity: 0.6
+                Text {
+                    id: rotatedLabel
+                    color: "darkblue"
+                    text: objectClassLabel.text
+                    anchors.centerIn: parent
+                }
             }
         }
-    }
     }
 }

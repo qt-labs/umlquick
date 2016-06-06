@@ -11,8 +11,8 @@ https://codereview.qt-project.org/#change,43201
 and there is an example patch for qtbase to trace touch events here
 https://codereview.qt-project.org/#change,65307
 
-It should work with Qt 5.2 or newer (due to some limited usage of
-QtQuick.Controls).
+It should work with Qt 5.7 or newer (due to some limited usage of
+QtQuick.Controls 2).
 
 uq is a script which simply runs qml with your given (possibly
 generated) qml file containing the declarative UML diagram.  It can

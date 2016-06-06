@@ -35,37 +35,43 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
-import QtQuick.Window 2.0
-import QtQuick.Controls 1.0
+import QtQuick 2.7
+import QtQuick.Controls 2.0
 
 Item {
     id: root
     width: 1914
-    height: 1180
+    height: 1040
     default property alias data: col.data
     focus: true
-    ScrollView {
+    Shortcut {
+        sequence: StandardKey.Quit
+        onActivated: Qt.quit()
+    }
+    Flickable {
+        id: flickable
         anchors.fill: parent
-        Flickable {
-            id: flickable
-            anchors.fill: parent
-            contentHeight: col.implicitHeight * col.scale
-            contentWidth: col.width * col.scale
-            Column {
-                id: col
-                property int rightmostX: 0
-                width: rightmostX + 100
-                transformOrigin: Item.TopLeft
-//            onScaleChanged: console.log("scale " + scale + " width " + width + " flickable contentwidth " + flickable.contentWidth)
-            }
+        contentHeight: col.implicitHeight * col.scale
+        contentWidth: col.width * col.scale
+        Column {
+            id: col
+            property int rightmostX: 0
+            width: rightmostX + 100
+            transformOrigin: Item.TopLeft
+        }
+        ScrollBar.vertical: ScrollBar { }
+        ScrollBar.horizontal: ScrollBar { }
+    }
+    MouseArea {
+        acceptedButtons: Qt.NoButton
+        anchors.fill: parent
+        onWheel: {
+            if (wheel.modifiers === Qt.ControlModifier)
+                col.scale *= (wheel.angleDelta.y > 0 ? 1.4142135623731 : 0.707106781186547)
+            else
+                wheel.accepted = false
         }
     }
-//    MouseArea {
-//        acceptedButtons: Qt.MiddleButton
-//        anchors.fill: parent
-//        onWheel: col.scale *= (wheel.angleDelta.y > 0 ? 1.4142135623731 : 0.707106781186547)
-//    }
     Keys.onPressed: {
         console.log("pressed " + event.key + " mods " + event.modifiers)
         if (event.modifiers === Qt.ControlModifier) {
@@ -76,4 +82,3 @@ Item {
         }
     }
 }
-
