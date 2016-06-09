@@ -84,6 +84,7 @@ private:
 private:
     struct Message {
         double timestamp;
+        bool inferredFromBacktrace = false;
         QtMsgType type;
         void *callerPointer;
         QString callerClass;
@@ -105,6 +106,7 @@ private:
     static int m_refCount;
 
     QList<Message> m_messages;
+    QStringList m_previousBacktrace;
     double m_previousTimestamp;
 
     QHash<QString, QString> m_tracedObjectsById;

@@ -148,6 +148,8 @@ QRegularExpression QmlMessageTrace::m_regexObjectFormatted(QStringLiteral(
 QRegularExpression QmlMessageTrace::m_regexPointer(QStringLiteral(
     "0[xX]([0-9a-fA-F]+)"));
 
+static const double BacktraceContinuationTimeLimit = 0.01;
+
 int QmlMessageTrace::m_refCount(0);
 
 static QString pointerHash(void* ptr)
@@ -330,6 +332,7 @@ void QmlMessageTrace::logBacktrace(QStringList trace)
     if (trace.length() < 2)
         return;
     Message m;
+    m.inferredFromBacktrace = true;
     m.timestamp = m_previousTimestamp;
     m.callerPointer = nullptr;
     m.calleePointer = nullptr;
@@ -424,12 +427,45 @@ void QmlMessageTrace::log(QtMsgType type, const QMessageLogContext &context, con
             addObjectInstance(nullptr, m.callerClass);
         }
         MT_DEBUG("   caller %p %s :: %s from %s\n", m.callerPointer, qPrintable(m.callerClass), qPrintable(m.callerMethod), qPrintable(callerClassAndMethod));
-        // TODO deduce where we are in the message trace from caller method
 
+        // find out if the backtrace leading up to the current method call
+        // is a continuation of m_previousBacktrace
         QStringList leadingBacktrace = m.backtrace;
-        leadingBacktrace.removeFirst();
+        MT_DEBUG("   backtrace %s\n", qPrintable(leadingBacktrace.join('|')));
+        MT_DEBUG("   previous  %s\n", qPrintable(m_previousBacktrace.join('|')));
+        MT_DEBUG("   time diff  %lf\n", m.timestamp - m_previousTimestamp);
+        if (m.timestamp - m_previousTimestamp < BacktraceContinuationTimeLimit && !m_previousBacktrace.isEmpty()) {
+            int idx = leadingBacktrace.indexOf(m_previousBacktrace.first());
+            bool isContinuation = (idx >= 0);
+            for ( int i = idx, j = 0;
+                  isContinuation && i < leadingBacktrace.length() && j < m_previousBacktrace.length();
+                  ++i, ++j) {
+                if (leadingBacktrace.at(i) != m_previousBacktrace.at(j)) {
+                    int iWas = i;
+                    while (++i < leadingBacktrace.length() && leadingBacktrace.at(i) != m_previousBacktrace.at(j)) { };
+                    if (i == leadingBacktrace.length()) {
+                        i = iWas;
+#ifdef MT_DEBUG_ENABLED
+                        int jWas = j;
+#endif
+                        while (++j < m_previousBacktrace.length() && leadingBacktrace.at(i) != m_previousBacktrace.at(j)) { };
+                        if (j == m_previousBacktrace.length()) {
+                            MT_DEBUG("   mismatch at %d:%d: %s != %s\n", iWas, jWas, qPrintable(leadingBacktrace.at(iWas)), qPrintable(m_previousBacktrace.at(jWas)));
+                            isContinuation = false;
+                        }
+                    }
+                }
+            }
+            if (isContinuation) {
+                MT_DEBUG("   truncating previously-seen backtrace after index %d\n", idx);
+                leadingBacktrace = leadingBacktrace.mid(0, idx);
+            } else {
+                MT_DEBUG("   nothing in common between backtraces");
+            }
+        }
 
         m_previousTimestamp = m.timestamp;
+        m_previousBacktrace = m.backtrace;
 
         logBacktrace(leadingBacktrace);
     }
@@ -495,9 +531,9 @@ QString QmlMessageTrace::Message::toQml() const
     QString callerId = callerPointer ? pointerHash(callerPointer) : QStringLiteral("ufo_") + callerClass;
     return QStringLiteral(
             "    Message { \n        from: %1\n        to: %2\n        method: \"%3\"\n        methodSignature: \"%4\"\n"
-            "        fromMethod: \"%5\"\n        timestamp: %6\n        backtrace: \"%7\"\n        params: \"%8\"\n    }\n")
+            "        fromMethod: \"%5\"\n        timestamp: %6\n        backtrace: \"%7\"\n        params: \"%8\"\n        inferredFromBacktrace: %9\n    }\n")
             .arg(callerId).arg(pointerHash(calleePointer)).arg(calleeMethod).arg(calleeSignature)
-            .arg(callerMethod).arg(timestamp).arg(backtrace.join(QStringLiteral("\\n"))).arg(params);
+            .arg(callerMethod).arg(timestamp).arg(backtrace.join(QStringLiteral("\\n"))).arg(params).arg(inferredFromBacktrace ? "true" : "false");
 }
 
 QT_END_NAMESPACE

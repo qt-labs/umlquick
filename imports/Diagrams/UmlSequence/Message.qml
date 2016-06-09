@@ -47,13 +47,14 @@ MouseArea {
     property string params
     property string fromMethod
     property string backtrace
+    property bool inferredFromBacktrace: false
+    property bool toSelf: from && from === to
+    property bool backwards: from && to ? from.x > to.x : false
+    property real timestamp: 0
     width: 100
     height: 30
     hoverEnabled: true
     z: 1
-    property bool toSelf: from && from === to
-    property bool backwards: from && to ? from.x > to.x : false
-    property real timestamp: 0
     Text {
         x: -root.x
         text: root.timestamp
@@ -77,7 +78,7 @@ MouseArea {
     }
     Text {
         id: methodLabel
-        font.bold: true
+        font.bold: !root.inferredFromBacktrace
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
     }
