@@ -64,7 +64,7 @@
     Trace diagram.
 
     When the trace is completed, simply run the qml output file with the qml
-    runtime tool. It will import components from Diagrams.UmlSequence, which
+    runtime tool. It will import components from Qt.labs.UmlQuick.Sequence, which
     should be installed already if you have built this module properly.
 
     For example, to trace hover events in a QML application, create a file
@@ -491,7 +491,7 @@ void QmlMessageTrace::writeQml()
     MT_DEBUG("-> %s\n", qPrintable(filePath));
     QFile f(filePath);
     if (f.open(QFile::WriteOnly)) {
-        f.write("import QtQuick 2.0\nimport Diagrams.UmlSequence 1.0\n\nUmlSequenceDiagram {\n");
+        f.write("import QtQuick 2.0\nimport Qt.labs.UmlQuick.Sequence 1.0\n\nUmlSequenceDiagram {\n");
         QSet<void *> objectsWritten;
         QSet<QString> ufosWritten;
         for (Message &m : m_messages) {

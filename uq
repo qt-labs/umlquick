@@ -1,3 +1,0 @@
-#!/bin/sh
-dir=`dirname $0`
-qml -I ${dir}/imports $1

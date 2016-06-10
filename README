@@ -1,7 +1,7 @@
 The initial goal of the UmlQuick project is to automatically generate
-message trace diagrams via a declarative QML form by instrumenting the
-code being traced.  Perhaps other types of diagrams could be created in
-QML too.  It was inspired by the UMLGraph project
+Sequence (message trace) diagrams via a declarative QML form by
+instrumenting the code being traced. Perhaps other types of diagrams
+could be created in QML too. It was inspired by the UMLGraph project
 http://www.umlgraph.org/doc/seq-intro.html but rewritten because I
 wanted to try to use QML instead of gnu pic macros.
 
@@ -11,6 +11,4 @@ examples: how to generate the trace, and examples of complete traces.
 It should work with Qt 5.7 or newer (due to some limited usage of
 QtQuick.Controls 2).
 
-uq is a script which simply runs qml with your given (possibly
-generated) qml file containing the declarative UML diagram.  It can
-optionally be added to your path.
+Simply run qmake and make install.  Then try the examples.
