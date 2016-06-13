@@ -53,6 +53,7 @@ Item {
         anchors.fill: parent
         contentHeight: col.implicitHeight * col.scale
         contentWidth: col.width * col.scale
+        flickableDirection: Flickable.AutoFlickIfNeeded
         Column {
             id: col
             property int rightmostX: 0
