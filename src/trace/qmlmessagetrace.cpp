@@ -316,7 +316,7 @@ void QmlMessageTrace::writeObjectInstance(QFile &f, QObject *o)
 {
     if (!o)
         return;
-    QString className = o->metaObject()->className();
+    QString className = QString::fromUtf8(o->metaObject()->className());
     int qmlSuffixIdx = className.indexOf(QStringLiteral("_QML"));
     if (qmlSuffixIdx > 0)
         className = className.left(qmlSuffixIdx);
