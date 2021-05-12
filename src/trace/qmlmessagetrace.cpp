@@ -320,7 +320,10 @@ void QmlMessageTrace::writeObjectInstance(QFile &f, QObject *o)
     int qmlSuffixIdx = className.indexOf(QStringLiteral("_QML"));
     if (qmlSuffixIdx > 0)
         className = className.left(qmlSuffixIdx);
-    QString oName = o->objectName();
+    QObjectPrivate *opriv = QObjectPrivate::get(o);
+    QString oName;
+    if (!opriv->wasDeleted && !opriv->isDeletingChildren)
+        oName = o->objectName();
     if (oName.isEmpty())
         oName = QStringLiteral("0x%1").arg(qulonglong(o), 0, 16);
     f.write(QStringLiteral("    ObjectInstance { id: %1; objectName: \"%2\"; objectClass: \"%3\" }\n")
