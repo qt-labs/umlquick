@@ -286,7 +286,7 @@ void QmlMessageTrace::parseClassAndMethod(const QString &classAndMethod, QString
 {
     int scopingIdx = classAndMethod.indexOf(QStringLiteral("::"));
     if (scopingIdx >= 0) {
-        className = classAndMethod.left(scopingIdx).split(' ', QString::SkipEmptyParts).last();
+        className = classAndMethod.left(scopingIdx).split(' ', Qt::SkipEmptyParts).last();
         int leftParenIdx = classAndMethod.indexOf('(', scopingIdx);
         scopingIdx += 2; // get past it
         methodName = leftParenIdx >= 0 ? classAndMethod.mid(scopingIdx, leftParenIdx - scopingIdx) : classAndMethod.mid(scopingIdx);
