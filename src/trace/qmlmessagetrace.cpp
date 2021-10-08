@@ -108,10 +108,14 @@
     diagram will show that the method called itself. That would be incorrect:
     the self-call should be reserved to indicate recursion.
 
-    The category debug output should not include Q_FUNC_INFO, because that
-    information is already available in every log message, so including it
-    again would be redundant. Every qCDebug for tracing class methods should
-    include \c this as the first parameter. If you include extra information, e.g.
+    You need to configure Qt with \c {configure -developer-build ...}. (It's ok
+    to configure with \c {-developer-build -release} if you want it fast enough
+    for profiling and don't need debug symbols. But then backtraces contain
+    less information.) Then the category debug output does not need to include
+    Q_FUNC_INFO, because that information is already available in every log
+    message, so including it again would be redundant. Instead, every qCDebug
+    for tracing class methods should include \c this as the first parameter.
+    If you include extra information, e.g.
     \code
     qCDebug(QC_CATEGORY) << this << parameter1 << parameter2
     \endcode
@@ -119,6 +123,11 @@
     the diagram. Typically you should include information about any interesting
     method parameters; but too much information will make the diagram hard to
     read.
+
+    \note This only works on glibc platforms (mainly Linux) because the
+    feature to have backtraces in categorized logging depends on glibc
+    (see QTBUG-97278).  On other platforms, the message trace will only show
+    a series of the traced function calls in one column, and omit the others.
 */
 
 /*!
