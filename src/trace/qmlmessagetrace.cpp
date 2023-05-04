@@ -154,6 +154,7 @@ using namespace Qt::StringLiterals;
 
 QHash<QByteArray, QList<QmlMessageTrace*> > QmlMessageTrace::m_categoryInstances;
 QtMessageHandler QmlMessageTrace::m_parentMessageHandler(nullptr);
+QHash<void*, QObject*> QmlMessageTrace::m_objects;
 
 // Regex for stuff like QQuickMouseArea(0x16b9cf0, name="outerMA", parent=0x16fc070, geometry=0,0 100x400)
 // Captures only the part outside parentheses and the part inside
@@ -180,6 +181,24 @@ static QString pointerHash(void* ptr)
     if (ret.length() == 1)
         return QStringLiteral("null");
     return QLatin1String(ret);
+}
+
+QString QmlMessageTrace::objectId(void *obj)
+{
+    QString ret;
+    QObject *qo = m_objects.value(obj);
+    if (qo) {
+        QObjectPrivate *opriv = QObjectPrivate::get(qo);
+        if (!opriv->wasDeleted && !opriv->isDeletingChildren)
+            ret = qo->objectName();
+    }
+    if (ret.isEmpty()) {
+        ret = pointerHash(obj);
+        if (!qo)
+            qWarning() << "unknown participant?" << obj << "is" << ret;
+            // might be a QObjectPrivate, but it's not safe to check
+    }
+    return ret;
 }
 
 void QmlMessageTrace::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &text)
@@ -362,12 +381,7 @@ void QmlMessageTrace::writeObjectInstancePuml(QFile &f, QObject *o)
     int qmlSuffixIdx = className.indexOf(QStringLiteral("_QML"));
     if (qmlSuffixIdx > 0)
         className = className.left(qmlSuffixIdx);
-    QObjectPrivate *opriv = QObjectPrivate::get(o);
-    QString oName;
-    if (!opriv->wasDeleted && !opriv->isDeletingChildren)
-        oName = o->objectName();
-    if (oName.isEmpty())
-        oName = QStringLiteral("0x%1").arg(qulonglong(o), 0, 16);
+    QString oName = objectId(o);
     if (className.isEmpty()) {
         qWarning() << "unknown class for" << o;
         return;
@@ -657,17 +671,22 @@ QString QmlMessageTrace::Message::toQml() const
 */
 QString QmlMessageTrace::Message::toPuml() const
 {
-    QString callerId = callerPointer ? pointerHash(callerPointer) : QStringLiteral("ufo_") + callerClass;
+    QString callerId = callerPointer ? objectId(callerPointer) : QStringLiteral("ufo_") + callerClass;
+    QString calleeId = calleePointer ? objectId(calleePointer) : QStringLiteral("ufo_") + calleeClass;
 
-MT_DEBUG("   callee %s %p\n", qPrintable(calleeSignature), calleePointer);
+//    MT_DEBUG("   toPuml: caller %p %s %s callee %p %s %s\n",
+//             callerPointer, qPrintable(callerId), qPrintable(callerMethod),
+//             calleePointer, qPrintable(calleeId), qPrintable(calleeSignature));
 
-    QString ret = u"%1 -> %2: %3(%4)\n"_s
-                      .arg(callerId).arg(pointerHash(calleePointer)).arg(calleeMethod).arg(params);
+//    QString ret = u"%1 -> %2: %3(%4)\n"_s
+//                      .arg(callerId).arg(calleeId).arg(calleeMethod).arg(params);
+    QString ret = u"%1 -> %2: %3\n"_s
+                      .arg(callerId).arg(calleeId).arg(calleeMethod);
     if (!calleeSignature.isEmpty()) {
         auto sigWords = calleeSignature.split(u' ');
         if (sigWords.first() != u"void")
             ret += u"%1 <-- %2: %3\n"_s
-                       .arg(callerId).arg(pointerHash(calleePointer)).arg(sigWords.first());
+                       .arg(callerId).arg(calleeId).arg(sigWords.first());
     }
     return ret;
 }

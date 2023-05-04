@@ -88,6 +88,7 @@ private:
     void log(QtMsgType type, const QMessageLogContext &context, const QString &rawText);
     void logBacktrace(QStringList trace);
     void parseClassAndMethod(const QString &classAndMethod, QString &className, QString &methodName);
+    static QString objectId(void *obj);
     void addObjectInstance(void *obj, const QString &objClass);
     void writeObjectInstanceQml(QFile &f, QObject *o);
     void writeObjectInstancePuml(QFile &f, QObject *o);
@@ -104,6 +105,7 @@ private:
         QString callerClass;
         QString callerMethod;
         void *calleePointer;
+        QString calleeClass;
         QString calleeMethod;
         QString calleeSignature;
         QStringList backtrace;
@@ -118,7 +120,7 @@ private:
     static QRegularExpression m_regexObjectFormatted;
     static QRegularExpression m_regexPointer;
 
-    static int m_refCount;
+    static QHash<void*, QObject*> m_objects; // both QObjects and QObjectPrivates have entries here
 
     QList<Message> m_messages;
     QStringList m_previousBacktrace;
@@ -126,7 +128,6 @@ private:
 
     QHash<QString, QString> m_tracedObjectsById;
     QHash<QString, void*> m_recentObjectsByClass;
-    QHash<void*, QObject*> m_objects; // both QObjects and QObjectPrivates have entries here
 
     bool m_enabled;
     QByteArray m_category;
