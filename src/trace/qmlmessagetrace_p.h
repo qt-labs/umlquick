@@ -52,8 +52,15 @@ class QmlMessageTrace : public QObject
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
     Q_PROPERTY(QString outputPrefix READ outputPrefix WRITE setOutputPrefix NOTIFY outputPrefixChanged)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
+    Q_PROPERTY(OutputFormat outputFormat READ outputFormat WRITE setOutputFormat NOTIFY outputFormatChanged)
 
 public:
+    enum class OutputFormat {
+        QML,
+        PlantUML
+    };
+    Q_ENUM(OutputFormat)
+
     QmlMessageTrace();
     ~QmlMessageTrace();
 
@@ -66,10 +73,15 @@ public:
     bool enabled() const { return m_enabled; }
     void setEnabled(bool enabled);
 
+    OutputFormat outputFormat() const;
+    void setOutputFormat(OutputFormat fmt);
+
 signals:
     void categoryChanged();
     void outputPrefixChanged();
     void enabledChanged();
+
+    void outputFormatChanged();
 
 private:
     static void categoryFilter(QLoggingCategory *cat);
@@ -78,8 +90,11 @@ private:
     void logBacktrace(QStringList trace);
     void parseClassAndMethod(const QString &classAndMethod, QString &className, QString &methodName);
     void addObjectInstance(void *obj, const QString &objClass);
-    void writeObjectInstance(QFile &f, QObject *o);
-    void writeQml();
+    void writeObjectInstanceQml(QFile &f, QObject *o);
+    void writeObjectInstancePuml(QFile &f, QObject *o);
+    void write();
+    void writeQml(const QString &plainFilePath);
+    void writePuml(const QString &plainFilePath);
 
 private:
     struct Message {
@@ -95,6 +110,7 @@ private:
         QStringList backtrace;
         QString params;
         QString toQml() const;
+        QString toPuml() const;
     };
 
     static QHash<QByteArray, QList<QmlMessageTrace*> > m_categoryInstances;
@@ -116,6 +132,7 @@ private:
     bool m_enabled;
     QByteArray m_category;
     QString m_outputPrefix;
+    OutputFormat m_outputFormat = OutputFormat::PlantUML;
 };
 
 QT_END_NAMESPACE

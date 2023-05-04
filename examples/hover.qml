@@ -48,6 +48,7 @@ Rectangle {
     MessageTrace {
         category: "qt.quick.hover.trace"
         outputPrefix: "hoverSequence-"
+//        outputFormat: MessageTrace.QML
     }
 
     MouseArea {

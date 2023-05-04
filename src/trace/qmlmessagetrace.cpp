@@ -48,9 +48,10 @@
     \class QmlMessageTrace
     \inmodule UmlQuick
 
-    \brief The QmlMessageTrace class provides a QML output stream for rendering
+    \brief The QmlMessageTrace class provides an output stream for rendering
     a UML \l {https://en.wikipedia.org/wiki/Sequence_diagram}{Sequence diagram}
-    (also known as a Message Trace diagram).
+    (also known as a Message Trace diagram). The outputFormat property specifies
+    what syntax to use for that.
 
     \section1 Basic Use
 
@@ -63,9 +64,13 @@
     emit signals) will be enough to reconstruct a fairly complete UML Message
     Trace diagram.
 
-    When the trace is completed, simply run the qml output file with the qml
-    runtime tool. It will import components from Qt.labs.UmlQuick.Sequence, which
-    should be installed already if you have built this module properly.
+    When the trace is completed, you have an output file. If outputFormat was
+    QML, simply run the qml output file with the qml runtime tool. It will
+    import components from Qt.labs.UmlQuick.Sequence, which should be installed
+    already if you have built this module properly.
+
+    If outputFormat was PlantUML, you need to use the plantuml tool to process
+    the puml file.
 
     For example, to trace hover events in a QML application, create a file
     traceHover.qml which looks like the following:
@@ -138,12 +143,14 @@
 
 QT_BEGIN_NAMESPACE
 
-//#define MT_DEBUG_ENABLED
+#define MT_DEBUG_ENABLED
 #ifdef MT_DEBUG_ENABLED
 #define MT_DEBUG printf
 #else
 #define MT_DEBUG(format, args...) ((void)0)
 #endif
+
+using namespace Qt::StringLiterals;
 
 QHash<QByteArray, QList<QmlMessageTrace*> > QmlMessageTrace::m_categoryInstances;
 QtMessageHandler QmlMessageTrace::m_parentMessageHandler(nullptr);
@@ -213,7 +220,7 @@ QmlMessageTrace::~QmlMessageTrace()
     if (--m_refCount == 0)
         qInstallMessageHandler(nullptr);
     if (!m_messages.isEmpty())
-        writeQml();
+        write();
 }
 
 void QmlMessageTrace::setCategory(QString cat)
@@ -257,8 +264,22 @@ void QmlMessageTrace::setEnabled(bool enabled)
 
     m_enabled = enabled;
     if (!enabled)
-        writeQml();
+        write();
     emit enabledChanged();
+}
+
+QmlMessageTrace::OutputFormat QmlMessageTrace::outputFormat() const
+{
+    return m_outputFormat;
+}
+
+void QmlMessageTrace::setOutputFormat(OutputFormat fmt)
+{
+    if (m_outputFormat == fmt)
+        return;
+
+    m_outputFormat = fmt;
+    emit outputFormatChanged();
 }
 
 void QmlMessageTrace::categoryFilter(QLoggingCategory *cat)
@@ -321,7 +342,7 @@ void QmlMessageTrace::addObjectInstance(void *obj, const QString &objClass)
     }
 }
 
-void QmlMessageTrace::writeObjectInstance(QFile &f, QObject *o)
+void QmlMessageTrace::writeObjectInstanceQml(QFile &f, QObject *o)
 {
     if (!o)
         return;
@@ -336,7 +357,33 @@ void QmlMessageTrace::writeObjectInstance(QFile &f, QObject *o)
     if (oName.isEmpty())
         oName = QStringLiteral("0x%1").arg(qulonglong(o), 0, 16);
     f.write(QStringLiteral("    ObjectInstance { id: %1; objectName: \"%2\"; objectClass: \"%3\" }\n")
-            .arg(pointerHash(o)).arg(oName).arg(className).toUtf8());
+                .arg(pointerHash(o)).arg(oName).arg(className).toUtf8());
+}
+
+void QmlMessageTrace::writeObjectInstancePuml(QFile &f, QObject *o)
+{
+    if (!o)
+        return;
+    QString className = QString::fromUtf8(o->metaObject()->className());
+    int qmlSuffixIdx = className.indexOf(QStringLiteral("_QML"));
+    if (qmlSuffixIdx > 0)
+        className = className.left(qmlSuffixIdx);
+    QObjectPrivate *opriv = QObjectPrivate::get(o);
+    QString oName;
+    if (!opriv->wasDeleted && !opriv->isDeletingChildren)
+        oName = o->objectName();
+    if (oName.isEmpty())
+        oName = QStringLiteral("0x%1").arg(qulonglong(o), 0, 16);
+    if (className.isEmpty()) {
+        qWarning() << "unknown class for" << o;
+        return;
+    }
+    if (oName.isEmpty()) {
+        qWarning() << "unknown object name for" << o;
+        return;
+    }
+    f.write(u"participant %1 as %2\n"_s
+                .arg(className).arg(oName).toUtf8());
 }
 
 void QmlMessageTrace::logBacktrace(QStringList trace)
@@ -401,10 +448,10 @@ void QmlMessageTrace::log(QtMsgType type, const QMessageLogContext &context, con
                 calleeInfo.remove(0, 1);
             calleeInfo = calleeInfo.trimmed();
         }
-//        MT_DEBUG("callee %s::%s %p guts %s from %s\n", qPrintable(calleeClassName), qPrintable(m.calleeMethod), m.calleePointer, qPrintable(calleeInfo), qPrintable(m.params));
+        MT_DEBUG("callee %s::%s %p guts %s from %s\n", qPrintable(calleeClassName), qPrintable(m.calleeMethod), m.calleePointer, qPrintable(calleeInfo), qPrintable(m.params));
     } else if (hasMatch(m_regexPointer, match, m.params) && match.capturedStart() == 0) {
         // Got just a plain pointer to "this" which was supposed to be the first parameter to qCDebug
-//        MT_DEBUG("captured pointer %s @%d from %s\n", qPrintable(match.captured(1)), match.capturedStart(), qPrintable(m.params));
+        MT_DEBUG("captured pointer %s @%lld from %s\n", qPrintable(match.captured(1)), match.capturedStart(), qPrintable(m.params));
         callee0xPointerStr = match.captured(0);
         m.calleePointer = stringToPointer(match.captured(1));
     } else {
@@ -497,9 +544,23 @@ void QmlMessageTrace::log(QtMsgType type, const QMessageLogContext &context, con
     m_messages.append(m);
 }
 
-void QmlMessageTrace::writeQml()
+
+void QmlMessageTrace::write()
 {
-    QString filePath = QString::fromLocal8Bit("%1%2.qml").arg(m_outputPrefix).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
+    QString filePath = m_outputPrefix + QDateTime::currentDateTime().toString(Qt::ISODate);
+    switch (m_outputFormat) {
+    case OutputFormat::QML:
+        writeQml(filePath);
+        break;
+    case OutputFormat::PlantUML:
+        writePuml(filePath);
+        break;
+    }
+}
+
+void QmlMessageTrace::writeQml(const QString &plainFilePath)
+{
+    QString filePath = plainFilePath + u".qml"_s;
     MT_DEBUG("-> %s\n", qPrintable(filePath));
     QFile f(filePath);
     if (f.open(QFile::WriteOnly)) {
@@ -510,7 +571,7 @@ void QmlMessageTrace::writeQml()
             QObject *callee = m_objects.value(m.calleePointer);
             m.calleePointer = callee;
             if (callee && !objectsWritten.contains(callee)) {
-                writeObjectInstance(f, callee);
+                writeObjectInstanceQml(f, callee);
                 objectsWritten.insert(callee);
             }
             QObject *caller = m_objects.value(m.callerPointer);
@@ -521,7 +582,7 @@ void QmlMessageTrace::writeQml()
             m.callerPointer = caller;
             if (caller) {
                 if (!objectsWritten.contains(caller)) {
-                    writeObjectInstance(f, caller);
+                    writeObjectInstanceQml(f, caller);
                     objectsWritten.insert(caller);
                 }
             } else if (!ufosWritten.contains(m.callerClass)) {
@@ -538,6 +599,47 @@ void QmlMessageTrace::writeQml()
     }
 }
 
+void QmlMessageTrace::writePuml(const QString &plainFilePath)
+{
+    QString filePath = plainFilePath + u".puml"_s;
+    MT_DEBUG("-> %s\n", qPrintable(filePath));
+    QFile f(filePath);
+    if (f.open(QFile::WriteOnly)) {
+        f.write("@startuml\n");
+        QSet<void *> objectsWritten;
+        QSet<QString> ufosWritten;
+        for (Message &m : m_messages) {
+            QObject *callee = m_objects.value(m.calleePointer);
+//            m.calleePointer = callee;
+            if (callee && !objectsWritten.contains(callee)) {
+                writeObjectInstancePuml(f, callee);
+                objectsWritten.insert(callee);
+            }
+            QObject *caller = m_objects.value(m.callerPointer);
+            if (!caller) {
+                void *p = m_recentObjectsByClass.value(m.callerClass);
+                caller = m_objects.value(p);
+            }
+            m.callerPointer = caller;
+            if (caller) {
+                if (!objectsWritten.contains(caller)) {
+                    writeObjectInstancePuml(f, caller);
+                    objectsWritten.insert(caller);
+                }
+            } else if (!m.callerClass.isEmpty() && !ufosWritten.contains(m.callerClass)) {
+                f.write(u"participant %1 as ufo_%2\n"_s
+                            .arg(m.callerClass).arg(m.callerClass).toUtf8());
+                ufosWritten.insert(m.callerClass);
+            }
+            f.write(m.toPuml().toUtf8());
+        }
+        f.write("@enduml\n");
+        f.close();
+    } else {
+        printf("failed to write %s", qPrintable(filePath));
+    }
+}
+
 QString QmlMessageTrace::Message::toQml() const
 {
     QString callerId = callerPointer ? pointerHash(callerPointer) : QStringLiteral("ufo_") + callerClass;
@@ -546,6 +648,34 @@ QString QmlMessageTrace::Message::toQml() const
             "        fromMethod: \"%5\"\n        timestamp: %6\n        backtrace: \"%7\"\n        params: \"%8\"\n        inferredFromBacktrace: %9\n    }\n")
             .arg(callerId).arg(pointerHash(calleePointer)).arg(calleeMethod).arg(calleeSignature)
             .arg(callerMethod).arg(timestamp).arg(backtrace.join(QStringLiteral("\\n"))).arg(params).arg(inferredFromBacktrace ? "true" : "false");
+}
+
+/*
+    Example:
+
+    @startuml
+    Alice -> Bob: Authentication Request
+    Bob --> Alice: Authentication Response
+
+    Alice -> Bob: Another authentication Request
+    Alice <-- Bob: Another authentication Response
+    @enduml
+*/
+QString QmlMessageTrace::Message::toPuml() const
+{
+    QString callerId = callerPointer ? pointerHash(callerPointer) : QStringLiteral("ufo_") + callerClass;
+
+MT_DEBUG("   callee %s %p\n", qPrintable(calleeSignature), calleePointer);
+
+    QString ret = u"%1 -> %2: %3(%4)\n"_s
+                      .arg(callerId).arg(pointerHash(calleePointer)).arg(calleeMethod).arg(params);
+    if (!calleeSignature.isEmpty()) {
+        auto sigWords = calleeSignature.split(u' ');
+        if (sigWords.first() != u"void")
+            ret += u"%1 <-- %2: %3\n"_s
+                       .arg(callerId).arg(pointerHash(calleePointer)).arg(sigWords.first());
+    }
+    return ret;
 }
 
 QT_END_NAMESPACE
