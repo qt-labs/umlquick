@@ -166,8 +166,6 @@ QRegularExpression QmlMessageTrace::m_regexPointer(QStringLiteral(
 
 static const double BacktraceContinuationTimeLimit = 0.01;
 
-int QmlMessageTrace::m_refCount(0);
-
 static QString pointerHash(void* ptr)
 {
     QByteArray ret;
@@ -207,20 +205,16 @@ QmlMessageTrace::QmlMessageTrace()
   , m_category(nullptr)
   , m_outputPrefix("messagetrace")
 {
-    ++m_refCount;
     if (qEnvironmentVariableIsSet("QT_MESSAGE_PATTERN")) {
         qFatal("please unset the QT_MESSAGE_PATTERN env variable before trying to use QmlMessageTrace");
         QCoreApplication::exit(-1);
     }
     qSetMessagePattern(QStringLiteral("%{time process}|%{backtrace depth=20}|%{message}"));
-}
-
-QmlMessageTrace::~QmlMessageTrace()
-{
-    if (--m_refCount == 0)
+    connect(qApp, &QCoreApplication::aboutToQuit, [this]() {
         qInstallMessageHandler(nullptr);
-    if (!m_messages.isEmpty())
-        write();
+        if (!m_messages.isEmpty())
+            write();
+    });
 }
 
 void QmlMessageTrace::setCategory(QString cat)

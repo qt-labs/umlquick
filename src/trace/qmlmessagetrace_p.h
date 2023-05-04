@@ -62,7 +62,6 @@ public:
     Q_ENUM(OutputFormat)
 
     QmlMessageTrace();
-    ~QmlMessageTrace();
 
     QString category() const;
     void setCategory(QString category);
