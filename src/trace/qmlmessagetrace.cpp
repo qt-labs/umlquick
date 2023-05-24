@@ -613,7 +613,7 @@ void QmlMessageTrace::writePuml(const QString &plainFilePath)
     MT_DEBUG("-> %s\n", qPrintable(filePath));
     QFile f(filePath);
     if (f.open(QFile::WriteOnly)) {
-        f.write("@startuml\n");
+        f.write("\\startuml\n");
         QSet<void *> objectsWritten;
         QSet<QString> ufosWritten;
         for (Message &m : m_messages) {
@@ -641,7 +641,7 @@ void QmlMessageTrace::writePuml(const QString &plainFilePath)
             }
             f.write(m.toPuml().toUtf8());
         }
-        f.write("@enduml\n");
+        f.write("\\enduml\n");
         f.close();
     } else {
         printf("failed to write %s", qPrintable(filePath));
