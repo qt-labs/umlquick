@@ -36,7 +36,7 @@
 ****************************************************************************/
 
 
-#include "qmlmessagetrace_p.h"
+#include "messagetrace_p.h"
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -45,10 +45,10 @@
 #include <private/qobject_p.h>
 
 /*!
-    \class QmlMessageTrace
+    \class MessageTrace
     \inmodule UmlQuick
 
-    \brief The QmlMessageTrace class provides an output stream for rendering
+    \brief The MessageTrace class provides an output stream for rendering
     a UML \l {https://en.wikipedia.org/wiki/Sequence_diagram}{Sequence diagram}
     (also known as a Message Trace diagram). The outputFormat property specifies
     what syntax to use for that.
@@ -152,17 +152,17 @@ QT_BEGIN_NAMESPACE
 
 using namespace Qt::StringLiterals;
 
-QHash<QByteArray, QList<QmlMessageTrace*> > QmlMessageTrace::m_categoryInstances;
-QtMessageHandler QmlMessageTrace::m_parentMessageHandler(nullptr);
-QHash<void*, QObject*> QmlMessageTrace::m_objects;
+QHash<QByteArray, QList<MessageTrace*> > MessageTrace::m_categoryInstances;
+QtMessageHandler MessageTrace::m_parentMessageHandler(nullptr);
+QHash<void*, QObject*> MessageTrace::m_objects;
 
 // Regex for stuff like QQuickMouseArea(0x16b9cf0, name="outerMA", parent=0x16fc070, geometry=0,0 100x400)
 // Captures only the part outside parentheses and the part inside
-QRegularExpression QmlMessageTrace::m_regexObjectFormatted(QStringLiteral(
+QRegularExpression MessageTrace::m_regexObjectFormatted(QStringLiteral(
     "([\\w_]+)\\((.+)\\)"));
 
 // Regex for pointers like 0x16ec750
-QRegularExpression QmlMessageTrace::m_regexPointer(QStringLiteral(
+QRegularExpression MessageTrace::m_regexPointer(QStringLiteral(
     "0[xX]([0-9a-fA-F]+)"));
 
 static const double BacktraceContinuationTimeLimit = 0.01;
@@ -183,7 +183,7 @@ static QString pointerHash(void* ptr)
     return QLatin1String(ret);
 }
 
-QString QmlMessageTrace::objectId(void *obj)
+QString MessageTrace::objectId(void *obj)
 {
     QString ret;
     QObject *qo = m_objects.value(obj);
@@ -201,13 +201,13 @@ QString QmlMessageTrace::objectId(void *obj)
     return ret;
 }
 
-void QmlMessageTrace::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &text)
+void MessageTrace::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &text)
 {
     bool consumed = false;
     if (m_categoryInstances.contains(context.category)) {
-        QList<QmlMessageTrace *> instances = m_categoryInstances.value(context.category);
+        QList<MessageTrace *> instances = m_categoryInstances.value(context.category);
         QString formatted = qFormatLogMessage(type, context, text);
-        for (QmlMessageTrace *tracer : instances) {
+        for (MessageTrace *tracer : instances) {
             tracer->log(type, context, formatted);
             consumed = true;
         }
@@ -217,7 +217,7 @@ void QmlMessageTrace::messageHandler(QtMsgType type, const QMessageLogContext &c
         m_parentMessageHandler(type, context, text);
 }
 
-QmlMessageTrace::QmlMessageTrace()
+MessageTrace::MessageTrace()
   : QObject()
   , m_previousTimestamp(0)
   , m_enabled(true)
@@ -225,7 +225,7 @@ QmlMessageTrace::QmlMessageTrace()
   , m_outputPrefix("messagetrace")
 {
     if (qEnvironmentVariableIsSet("QT_MESSAGE_PATTERN")) {
-        qFatal("please unset the QT_MESSAGE_PATTERN env variable before trying to use QmlMessageTrace");
+        qFatal("please unset the QT_MESSAGE_PATTERN env variable before trying to use MessageTrace");
         QCoreApplication::exit(-1);
     }
     qSetMessagePattern(QStringLiteral("%{time process}|%{backtrace depth=20}|%{message}"));
@@ -236,7 +236,7 @@ QmlMessageTrace::QmlMessageTrace()
     });
 }
 
-void QmlMessageTrace::setCategory(QString cat)
+void MessageTrace::setCategory(QString cat)
 {
     QByteArray category = cat.toUtf8();
     if (m_category == category)
@@ -244,7 +244,7 @@ void QmlMessageTrace::setCategory(QString cat)
 
     if (m_categoryInstances.isEmpty()) {
         // first-use init
-        QLoggingCategory::installFilter(&QmlMessageTrace::categoryFilter);
+        QLoggingCategory::installFilter(&MessageTrace::categoryFilter);
     }
 
     if (m_categoryInstances.contains(m_category))
@@ -252,7 +252,7 @@ void QmlMessageTrace::setCategory(QString cat)
     if (m_categoryInstances.contains(category))
         m_categoryInstances[category].append(this);
     else
-        m_categoryInstances.insert(category, QList<QmlMessageTrace *>() << this);
+        m_categoryInstances.insert(category, QList<MessageTrace *>() << this);
     if (!m_parentMessageHandler) {
         m_parentMessageHandler = qInstallMessageHandler(messageHandler);
     }
@@ -261,7 +261,7 @@ void QmlMessageTrace::setCategory(QString cat)
     emit categoryChanged();
 }
 
-void QmlMessageTrace::setOutputPrefix(QString outputPrefix)
+void MessageTrace::setOutputPrefix(QString outputPrefix)
 {
     if (m_outputPrefix == outputPrefix)
         return;
@@ -270,7 +270,7 @@ void QmlMessageTrace::setOutputPrefix(QString outputPrefix)
     emit outputPrefixChanged();
 }
 
-void QmlMessageTrace::setEnabled(bool enabled)
+void MessageTrace::setEnabled(bool enabled)
 {
     if (m_enabled == enabled)
         return;
@@ -281,12 +281,12 @@ void QmlMessageTrace::setEnabled(bool enabled)
     emit enabledChanged();
 }
 
-QmlMessageTrace::OutputFormat QmlMessageTrace::outputFormat() const
+MessageTrace::OutputFormat MessageTrace::outputFormat() const
 {
     return m_outputFormat;
 }
 
-void QmlMessageTrace::setOutputFormat(OutputFormat fmt)
+void MessageTrace::setOutputFormat(OutputFormat fmt)
 {
     if (m_outputFormat == fmt)
         return;
@@ -295,7 +295,7 @@ void QmlMessageTrace::setOutputFormat(OutputFormat fmt)
     emit outputFormatChanged();
 }
 
-void QmlMessageTrace::categoryFilter(QLoggingCategory *cat)
+void MessageTrace::categoryFilter(QLoggingCategory *cat)
 {
     if (m_categoryInstances.contains(cat->categoryName())) {
         cat->setEnabled(QtDebugMsg, true);
@@ -306,7 +306,7 @@ void QmlMessageTrace::categoryFilter(QLoggingCategory *cat)
 //MT_DEBUG("%s %d\n", cat->categoryName(), cat->isDebugEnabled());
 }
 
-QString QmlMessageTrace::category() const
+QString MessageTrace::category() const
 {
     return QString::fromUtf8(m_category);
 }
@@ -325,7 +325,7 @@ static void * stringToPointer(const QString &str) {
     return ret;
 }
 
-void QmlMessageTrace::parseClassAndMethod(const QString &classAndMethod, QString &className, QString &methodName)
+void MessageTrace::parseClassAndMethod(const QString &classAndMethod, QString &className, QString &methodName)
 {
     int scopingIdx = classAndMethod.indexOf(QStringLiteral("::"));
     if (scopingIdx >= 0) {
@@ -341,7 +341,7 @@ void QmlMessageTrace::parseClassAndMethod(const QString &classAndMethod, QString
     }
 }
 
-void QmlMessageTrace::addObjectInstance(void *obj, const QString &objClass)
+void MessageTrace::addObjectInstance(void *obj, const QString &objClass)
 {
     QString id = obj ? pointerHash(obj) : QStringLiteral("ufo_") + objClass;
     m_tracedObjectsById.insert(id, objClass);
@@ -355,7 +355,7 @@ void QmlMessageTrace::addObjectInstance(void *obj, const QString &objClass)
     }
 }
 
-void QmlMessageTrace::writeObjectInstanceQml(QFile &f, QObject *o)
+void MessageTrace::writeObjectInstanceQml(QFile &f, QObject *o)
 {
     if (!o)
         return;
@@ -373,7 +373,7 @@ void QmlMessageTrace::writeObjectInstanceQml(QFile &f, QObject *o)
                 .arg(pointerHash(o)).arg(oName).arg(className).toUtf8());
 }
 
-void QmlMessageTrace::writeObjectInstancePuml(QFile &f, QObject *o)
+void MessageTrace::writeObjectInstancePuml(QFile &f, QObject *o)
 {
     if (!o)
         return;
@@ -394,7 +394,7 @@ void QmlMessageTrace::writeObjectInstancePuml(QFile &f, QObject *o)
                 .arg(className).arg(oName).toUtf8());
 }
 
-void QmlMessageTrace::logBacktrace(QStringList trace)
+void MessageTrace::logBacktrace(QStringList trace)
 {
     if (trace.length() < 2)
         return;
@@ -413,7 +413,7 @@ void QmlMessageTrace::logBacktrace(QStringList trace)
     m_messages.append(m);
 }
 
-void QmlMessageTrace::log(QtMsgType type, const QMessageLogContext &context, const QString &rawText)
+void MessageTrace::log(QtMsgType type, const QMessageLogContext &context, const QString &rawText)
 {
     if (type != QtDebugMsg)
         return; // so far we don't handle warning and critical
@@ -553,7 +553,7 @@ void QmlMessageTrace::log(QtMsgType type, const QMessageLogContext &context, con
 }
 
 
-void QmlMessageTrace::write()
+void MessageTrace::write()
 {
     QString filePath = m_outputPrefix + QDateTime::currentDateTime().toString(Qt::ISODate);
     switch (m_outputFormat) {
@@ -566,7 +566,7 @@ void QmlMessageTrace::write()
     }
 }
 
-void QmlMessageTrace::writeQml(const QString &plainFilePath)
+void MessageTrace::writeQml(const QString &plainFilePath)
 {
     QString filePath = plainFilePath + u".qml"_s;
     MT_DEBUG("-> %s\n", qPrintable(filePath));
@@ -607,7 +607,7 @@ void QmlMessageTrace::writeQml(const QString &plainFilePath)
     }
 }
 
-void QmlMessageTrace::writePuml(const QString &plainFilePath)
+void MessageTrace::writePuml(const QString &plainFilePath)
 {
     QString filePath = plainFilePath + u".puml"_s;
     MT_DEBUG("-> %s\n", qPrintable(filePath));
@@ -648,7 +648,7 @@ void QmlMessageTrace::writePuml(const QString &plainFilePath)
     }
 }
 
-QString QmlMessageTrace::Message::toQml() const
+QString MessageTrace::Message::toQml() const
 {
     QString callerId = callerPointer ? pointerHash(callerPointer) : QStringLiteral("ufo_") + callerClass;
     return QStringLiteral(
@@ -669,7 +669,7 @@ QString QmlMessageTrace::Message::toQml() const
     Alice <-- Bob: Another authentication Response
     @enduml
 */
-QString QmlMessageTrace::Message::toPuml() const
+QString MessageTrace::Message::toPuml() const
 {
     QString callerId = callerPointer ? objectId(callerPointer) : QStringLiteral("ufo_") + callerClass;
     QString calleeId = calleePointer ? objectId(calleePointer) : QStringLiteral("ufo_") + calleeClass;

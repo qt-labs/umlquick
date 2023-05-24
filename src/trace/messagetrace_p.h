@@ -36,23 +36,25 @@
 ****************************************************************************/
 
 
-#ifndef QMLMESSAGETRACE_H
-#define QMLMESSAGETRACE_H
+#ifndef MESSAGETRACE_H
+#define MESSAGETRACE_H
 
 #include <QFile>
 #include <QHash>
 #include <QLoggingCategory>
 #include <QRegularExpression>
+#include <QQmlEngine>
 
 QT_BEGIN_NAMESPACE
 
-class QmlMessageTrace : public QObject
+class MessageTrace : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
     Q_PROPERTY(QString outputPrefix READ outputPrefix WRITE setOutputPrefix NOTIFY outputPrefixChanged)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
     Q_PROPERTY(OutputFormat outputFormat READ outputFormat WRITE setOutputFormat NOTIFY outputFormatChanged)
+    QML_ELEMENT
 
 public:
     enum class OutputFormat {
@@ -61,7 +63,7 @@ public:
     };
     Q_ENUM(OutputFormat)
 
-    QmlMessageTrace();
+    MessageTrace();
 
     QString category() const;
     void setCategory(QString category);
@@ -114,7 +116,7 @@ private:
         QString toPuml() const;
     };
 
-    static QHash<QByteArray, QList<QmlMessageTrace*> > m_categoryInstances;
+    static QHash<QByteArray, QList<MessageTrace*> > m_categoryInstances;
     static QtMessageHandler m_parentMessageHandler;
 
     static QRegularExpression m_regexObjectFormatted;
@@ -137,4 +139,4 @@ private:
 
 QT_END_NAMESPACE
 
-#endif // QMLMESSAGETRACE_H
+#endif // MESSAGETRACE_H
