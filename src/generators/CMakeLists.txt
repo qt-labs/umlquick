@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(trace VERSION 1.0 LANGUAGES CXX)
+project(generators VERSION 1.0 LANGUAGES CXX)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
 qt_policy(SET QTP0001 NEW)
@@ -7,23 +7,23 @@ qt_standard_project_setup(REQUIRES 6.2)
 
 set(CMAKE_AUTOMOC ON)
 
-qt_add_qml_module(trace
-    URI Qt.labs.UmlQuick.Trace
-    PLUGIN_TARGET trace
-    OUTPUT_DIRECTORY Qt/labs/UmlQuick/Trace
+qt_add_qml_module(generators
+    URI Qt.labs.UmlQuick.Generators
+    PLUGIN_TARGET generators
+    OUTPUT_DIRECTORY Qt/labs/UmlQuick/Generators
     VERSION 1.0
     SOURCES
         messagetrace.cpp messagetrace_p.h
 )
 
-target_link_libraries(trace PUBLIC
+target_link_libraries(generators PUBLIC
     Qt::Core
     Qt::Gui
     Qt::Quick
     Qt::QuickPrivate
 )
 
-qt_query_qml_module(trace
+qt_query_qml_module(generators
     URI module_uri
     VERSION module_version
     PLUGIN_TARGET module_plugin_target
@@ -43,7 +43,7 @@ cmake_path(APPEND qtqmldir "${QT6_INSTALL_PREFIX}" "${QT6_INSTALL_QML}")
 cmake_path(APPEND module_dir "${qtqmldir}" "${module_target_path}")
 
 # Install the QML module backing library
-install(TARGETS trace
+install(TARGETS generators
     ARCHIVE DESTINATION "${qtlibdir}"
     LIBRARY DESTINATION "${module_dir}"
     RUNTIME DESTINATION "${qtbindir}"

@@ -37,7 +37,7 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-import Qt.labs.UmlQuick.Trace 1.0
+import Qt.labs.UmlQuick.Generators 1.0
 
 /*
     This is a means of instrumenting any pure-QML application to generate a

@@ -38,7 +38,7 @@
 **
 ****************************************************************************/
 import QtQuick 2.8
-import Qt.labs.UmlQuick.Trace 1.0
+import Qt.labs.UmlQuick.Generators 1.0
 
 Rectangle {
     color: outerMA.containsMouse ? "lightsteelblue" : "gray"
