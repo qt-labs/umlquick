@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(generators VERSION 1.0 LANGUAGES CXX)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Quick3D)
 qt_policy(SET QTP0001 NEW)
 qt_standard_project_setup(REQUIRES 6.2)
 
@@ -14,6 +14,7 @@ qt_add_qml_module(generators
     VERSION 1.0
     SOURCES
         messagetrace.cpp messagetrace_p.h
+        objectinstances.cpp objectinstances_p.h
 )
 
 target_link_libraries(generators PUBLIC
@@ -21,6 +22,8 @@ target_link_libraries(generators PUBLIC
     Qt::Gui
     Qt::Quick
     Qt::QuickPrivate
+    Qt::Quick3D
+    Qt::Quick3DPrivate
 )
 
 qt_query_qml_module(generators

@@ -41,6 +41,7 @@ import QtQuick 2.8
 import Qt.labs.UmlQuick.Generators 1.0
 
 Rectangle {
+    id: root
     color: outerMA.containsMouse ? "lightsteelblue" : "gray"
     width: 100; height: 400
     objectName: "outerRect"
@@ -50,6 +51,14 @@ Rectangle {
         outputPrefix: "hoverSequence-"
 //        outputFormat: MessageTrace.QML
     }
+
+    ObjectInstances {
+        id: oi
+        outputPrefix: "hoverObjects-"
+//        outputFormat: ObjectInstances.Graphviz
+        root: root
+    }
+    Component.onCompleted: oi.generate()
 
     MouseArea {
         id: outerMA
