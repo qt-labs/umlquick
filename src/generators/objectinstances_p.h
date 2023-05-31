@@ -6,6 +6,7 @@
 
 #include <QFile>
 #include <QQmlEngine>
+#include <QQuickWindow>
 
 QT_BEGIN_NAMESPACE
 
@@ -44,6 +45,7 @@ public:
     void setRoot(QObject *newRoot);
 
     Q_INVOKABLE void generate();
+    Q_INVOKABLE QQuickWindow *findQuickWindow();
 
     ColorSource nodeColorSource() const;
     void setNodeColorSource(ColorSource newNodeColorSource);

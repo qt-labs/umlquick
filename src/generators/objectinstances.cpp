@@ -7,6 +7,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QFile>
+#include <QGuiApplication>
 #include <QQuickItem>
 #include <QStringList>
 #include <private/qobject_p.h>
@@ -143,6 +144,23 @@ void ObjectInstances::generate()
         writeDot(filePath, m_root);
         break;
     }
+}
+
+/*!
+    Returns the first instance of a QQuickWindow that can be found within the
+    same process.
+
+    This is useful when you use the qml tool to instrument a pre-existing
+    unmodified QML file that has a top-level Window or Item: see
+    \c examples/objectInstancesTimer.qml
+*/
+QQuickWindow *ObjectInstances::findQuickWindow()
+{
+    for (auto *win : qGuiApp->topLevelWindows()) {
+        if (auto *qwin = qobject_cast<QQuickWindow *>(win))
+            return qwin;
+    }
+    return nullptr;
 }
 
 void ObjectInstances::writeDot(const QString &plainFilePath, const QObject *o)
